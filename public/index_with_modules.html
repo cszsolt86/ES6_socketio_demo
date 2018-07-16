@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>ES6 chat demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" media="screen" href="assets/css/main.css" />
+  </head>
+  <body>
+    <div id="chat-box">
+
+      <ul class="message-list"></ul>
+      
+      <input  type="text" class="nick-input" value="Guest" />
+      <input  type="text" class="message-input" />
+      <button class="send-button">Send</button>
+    
+    </div>
+
+    <!--
+      Since ES6 modules are imported in strict mode, the socket.io client cannot be loaded as such 
+      without modifications.
+
+      The defer keyword allows us to at least load it without blocking page rendering. (ES6 modules are 
+      loaded the same way)
+    -->
+    
+    <script type="text/javascript" src="http://185.13.90.140:8081/socket.io/socket.io.js"></script>
+    <script type="module" src="assets/js/main.js"></script>
+  </body>
+</html>

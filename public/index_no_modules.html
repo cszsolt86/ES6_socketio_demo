@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>ES6 chat demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" media="screen" href="assets/css/main.css" />
+  </head>
+  <body>
+    <div id="chat-box">
+
+      <ul class="message-list"></ul>
+      
+      <input  type="text" class="nick-input" value="Guest" />
+      <input  type="text" class="message-input" />
+      <button class="send-button">Send</button>
+    
+    </div>
+
+    <!--
+      Since ES6 modules are imported in strict mode, the socket.io client cannot be loaded as such 
+      without modifications.
+
+      The defer keyword allows us to at least load it without blocking page rendering. (ES6 modules are 
+      loaded the same way)
+    -->
+    
+    <script type="text/javascript" src="http://185.13.90.140:8081/socket.io/socket.io.js"></script>
+    <script type="text/javascript">
+      const createDomElement = ({
+        tagName = 'div',
+        className = '',
+        attribs = {}
+      }) => {
+        const element = window.document.createElement(tagName);
+        if (className.length) {
+          element.className = className.join(' ');
+        } else {
+          element.className = className;
+        }
+        Object.keys(attribs).forEach(attribName => {
+          element.setAttribute(attribName, attribs[attribName])
+        });
+        return element;
+      }
+
+      class ChatBox {
+
+        constructor({
+          deliverMessage = (message, nickname) => console.error('ChatBox.deliverMessage wasn\'t set. Send failed')
+        }) {
+
+          /*
+            Reference of dom nodes required
+          */
+
+          const rootElement = window.document.getElementById('chat-box');
+        
+          const [messageInput, nickInput, sendButton] = ['.message-input', '.nick-input', '.send-button'].map(
+            selector => rootElement.querySelector(selector)
+          );
+
+          this.messageList = rootElement.querySelector('.message-list');
+
+          const attemptDelivery = (nick, message) => {
+            if (message.trim() === '') return; //exit if the message is empty
+
+            //append message list, apply appropriate settings
+            ((element) => {
+              element.className = 'sent pending';
+              setTimeout(this.deliveryFailed.bind(this, element), 30000);
+            })( this.appendMessageList(message, nick) )
+
+            try {
+              deliverMessage(nick, message);
+            } catch(error) {
+              console.log(`Delivery of message "${message}" failed:\n`, error);
+              //execution can continue if delivery fails
+            }
+
+            messageInput.value = '';
+            messageInput.focus();
+          }
+
+          /*
+            Attempt to deliver message on 'Send' button click 
+          */
+          sendButton.addEventListener('click', (event) => {
+            attemptDelivery(nickInput.value, messageInput.value);
+          })
+
+          /*
+            Attempt to deliver message on enter 
+          */
+          messageInput.addEventListener('keypress', (event) => {
+            if (event.keyCode === 13) { 
+              attemptDelivery(nickInput.value, messageInput.value);
+              return false;
+            }
+          }) 
+
+          /*
+            Set focus to the message input, when the call stack is empty 
+          */
+          setTimeout(() => {
+            messageInput.focus()
+          }, 0);
+        }
+
+        /*
+          Mark message as failed, after 30sec without echo
+          Triggered in constructor()::attemptDelivery() 
+        */
+        deliveryFailed(element) {
+          if (element.classList.contains('pending')) {
+            element.classList.add('failed');
+            element.classList.remove('pending');
+          }
+        }
+
+        /*
+          Append list with message, and scroll down
+        */
+        appendMessageList(message, from) {
+          const messageElement = createDomElement({
+            tagName: 'li',
+            attribs: {
+              nickname: from
+            }
+          });
+          messageElement.textContent = message;
+          this.messageList.appendChild(messageElement);
+          this.messageList.scrollTo(0, this.messageList.scrollHeight);
+          return messageElement;
+        }
+
+        /*
+          Clear the pending state, if the appropriate echo was received
+          Triggered externally
+          Param: object received by socket.io on 'message' event
+        */
+        confirmMessage({ message }) {    
+          let feedback;
+          for (const Node of this.messageList.querySelectorAll('.sent.pending')) {
+            feedback = `${Node.getAttribute('nickname')} sent a message with content: ${Node.textContent}`; 
+            if (message === feedback) return Node.classList.remove('pending');
+          }
+        }
+
+        /*
+          Append list with message received 
+          Triggerd externally
+          Param: object received by socket.io on 'message' event
+        */
+        receiveMessage({user, message}) {
+          this.appendMessageList(message, user).className = 'received';
+        }
+      }
+      
+      const chatService = io.connect('185.13.90.140:8081');
+
+      const chatBox = new ChatBox({
+        deliverMessage: (nickname, message) => {
+          chatService.emit('message', {user: nickname, message: message})
+        }
+      });
+
+      chatService.on('message', (msg) => {
+        (msg.user === 'echoBot2000' ? chatBox.confirmMessage(msg) : chatBox.receiveMessage(msg))
+      });
+      
+    </script>
+  </body>
+</html>

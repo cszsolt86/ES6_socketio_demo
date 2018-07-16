@@ -1,0 +1,72 @@
+/*
+  Since we are using ES6 features (and the latest version of chrome), 
+  flexbox, the grid layout and css variables are guaranteed to be supported
+*/
+:root {
+  --background-color: #ffffff;
+  --border-color: #000000;
+  --text-color: #000000;
+}
+* {
+  margin: 0;
+  padding: 0;
+  font-family: 'Courier New', Courier, monospace;
+  color: var(--text-color);
+}
+input, button {
+  padding: 0 4px;
+  font-size: 1.4rem;
+  outline: none;
+  background: var(--background-color);
+  border: 2px solid var(--border-color);
+}
+button {
+  font-weight: bold;
+}
+button:active {
+  background: var(--text-color);
+  color: var(--background-color);
+}
+html {
+  height: 100%;
+  font-size: 62.5%;
+}
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 1.4rem;
+}
+#chat-box {
+  padding: 8px;
+  margin: 16px;
+  border: 2px solid var(--border-color);
+  display: grid;
+  grid-gap: 16px;
+  grid-template-columns: 60px 160px 60px;
+  grid-template-rows: 360px 26px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+#chat-box .message-list {
+  grid-column: 1 / span 3;
+  overflow-y: auto;
+}
+#chat-box .message-list > li {
+  display: block;
+  text-align: right;
+  line-height: 20px;
+  margin-bottom: 4px;
+  list-style: none;
+}
+#chat-box .message-list li.received::before {
+  content: attr(nickname) ': ';
+  font-weight: bold;
+}
+#chat-box .message-list > .received {
+  text-align: left
+}
+#chat-box .message-list > .sent.failed {
+  color: red
+}
